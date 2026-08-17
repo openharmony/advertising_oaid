@@ -374,7 +374,9 @@ void OAIDServiceStub::PostDelayUnloadTask()
                 ret);
             return;
         }
+        OAID_HILOGI(OAID_MODULE_SERVICE, "Unload task fired, calling UnloadSystemAbility success");
     };
+    OAID_HILOGI(OAID_MODULE_SERVICE, "PostDelayUnloadTask: posting task, delay=%{public}d", DELAY_TIME);
     unloadHandler_->RemoveTask(TASK_ID);
     unloadHandler_->PostTask(task, TASK_ID, DELAY_TIME);
 }
