@@ -353,13 +353,6 @@ void OAIDServiceStub::ExitIdleState()
 
 void OAIDServiceStub::PostDelayUnloadTask()
 {
-    init_eventHandler_Mutex_.lock();
-    if (unloadHandler_ == nullptr) {
-        const char *runnerName = "unlock";
-        auto runner = AppExecFwk::EventRunner::Create(runnerName);
-        unloadHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
-    }
-    init_eventHandler_Mutex_.unlock();
     auto task = [this]() {
         auto samgrProxy = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
         if (samgrProxy == nullptr) {
@@ -376,9 +369,17 @@ void OAIDServiceStub::PostDelayUnloadTask()
         }
         OAID_HILOGI(OAID_MODULE_SERVICE, "Unload task fired, calling UnloadSystemAbility success");
     };
-    OAID_HILOGI(OAID_MODULE_SERVICE, "PostDelayUnloadTask: posting task, delay=%{public}d", DELAY_TIME);
-    unloadHandler_->RemoveTask(TASK_ID);
-    unloadHandler_->PostTask(task, TASK_ID, DELAY_TIME);
+    {
+        std::lock_guard<std::mutex> autoLock(init_eventHandler_Mutex_);
+        if (unloadHandler_ == nullptr) {
+            const char *runnerName = "unlock";
+            auto runner = AppExecFwk::EventRunner::Create(runnerName);
+            unloadHandler_ = std::make_shared<AppExecFwk::EventHandler>(runner);
+        }
+        unloadHandler_->RemoveTask(TASK_ID);
+        unloadHandler_->PostTask(task, TASK_ID, DELAY_TIME);
+        OAID_HILOGI(OAID_MODULE_SERVICE, "PostDelayUnloadTask: posting task, delay=%{public}d", DELAY_TIME);
+    }
 }
 
 int32_t OAIDServiceStub::HandleRegisterControlConfigObserver(MessageParcel &data, MessageParcel &reply)
