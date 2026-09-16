@@ -14,6 +14,7 @@
  */
 
 #include "oaid_rdb_manager.h"
+#include "parse_oaid_int.h"
 #include "oaid_common.h"
 
 namespace OHOS {
@@ -312,13 +313,17 @@ std::vector<AncoAccessRecordInfo> OaidRdbManager::ProcessAccessRecords(
     std::vector<AncoAccessRecordInfo> result;
     std::map<MinuteGroupKey, std::vector<std::pair<int64_t, int32_t>>> minuteGroups;
     for (const auto& record : records) {
+        int64_t ts = 0;
+        if (!ParseOaidTime(record.time, ts)) {
+            continue;
+        }
         MinuteGroupKey key = {
             .userId = record.userId,
             .bundleName = record.bundleName,
             .uid = record.uid,
-            .minuteGroup = std::stoll(record.time) / ONE_MINUTE_MS
+            .minuteGroup = ts / ONE_MINUTE_MS
         };
-        minuteGroups[key].push_back({std::stoll(record.time), 1});
+        minuteGroups[key].push_back({ts, 1});
     }
     for (auto& pair : minuteGroups) {
         auto& timeList = pair.second;
